@@ -1,0 +1,18 @@
+syntax = "proto3";
+package service;
+option go_package = "/";
+import "google/protobuf/timestamp.proto";
+
+message ProductRequest{
+  repeated int32 product_id = 1; //product id
+}
+
+message  ProductResponse{
+  repeated ProductInfoList product_list = 1;
+}
+
+message ProductInfoList{
+  int32                     productId    = 1;
+  float                     productPrice = 2;
+  google.protobuf.Timestamp time         = 3;
+}

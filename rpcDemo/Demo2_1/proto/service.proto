@@ -1,0 +1,19 @@
+syntax = "proto3";
+package service ;
+import "google/api/annotations.proto";
+option go_package = "/";
+
+//每个字段都有唯一的一个数字标识符。这些标识符是用来在消息的二进制格式中识别各个字段的，一旦开始使用就不能够再改变。
+message ProductRequest{
+  int32 product_id = 1; //product id
+}
+message  ProductResponse{
+  int32  product_stock = 1; //product stock
+}
+service ProductService{
+  rpc GetProductStock (ProductRequest) returns (ProductResponse){
+    option (google.api.http) = {
+      get:"/v1/product/{product_id}"
+    };
+  }
+}

@@ -1,0 +1,36 @@
+syntax = "proto3";
+package studentQueryRpc.content ;
+option go_package = "/";
+
+enum  Sex{
+  MALE = 0;
+  FEMALE = 1;
+}
+message Grade{
+  int32 math = 1;
+  int32 chinese = 2;
+  int32 english = 3;
+}
+message Teacher{
+  message TeacherPersonalInfo{
+    string Address = 1;
+    bool Rich = 2;
+  }
+  int32 id = 1;
+}
+message Student{
+  int32 id = 1;
+  string name = 2;
+  Sex sex = 3;
+  Grade studentGrade = 4;
+  message StudentPersonalInfo{
+    string Address = 1;
+    bool Rich = 2;
+  }
+  StudentPersonalInfo studentPersonalInfo = 5;
+  repeated Teacher studentTeacher = 6;
+}
+message StudentQueryId{
+  int32  id = 1;
+}
+

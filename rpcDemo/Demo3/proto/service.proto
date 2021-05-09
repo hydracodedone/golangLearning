@@ -1,0 +1,15 @@
+syntax = "proto3";
+package studentQueryRpc.service;
+option go_package = "/";
+/*
+ when we import a package ,we do not import the name which identified by the key word "package",
+ otherwise we import the package by the file name
+*/
+import "content.proto";
+/*
+ when we import a package and prepare to use information of the imported package,we need the package name(
+ which defined by the key word "package" and dot adn message name,like "xxx.xxx" )
+*/
+service StudentInfoQueryService{
+  rpc QueryStudentInfo(studentQueryRpc.content.StudentQueryId) returns (studentQueryRpc.content.Student);
+}

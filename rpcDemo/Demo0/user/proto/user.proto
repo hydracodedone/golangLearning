@@ -1,0 +1,12 @@
+syntax ="proto3";
+
+package user;
+
+option go_package="user/user_types;user_types";
+
+import "data/proto/data.proto";
+import "data/proto/data2.proto";
+
+service DescribeUser{
+    rpc describeUser(data.request) returns(data.response);
+}
