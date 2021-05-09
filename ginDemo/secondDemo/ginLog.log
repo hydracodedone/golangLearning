@@ -1,0 +1,2 @@
+::1 - [Sun, 09 May 2021 08:57:29 CST] "GET /v1/setJwtToken?userId=1 HTTP/1.1 200 240.48µs "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36" "
+::1 - [Sun, 09 May 2021 08:57:41 CST] "GET /v1/getJwtToken HTTP/1.1 200 220.615µs "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36" "

@@ -1,0 +1,21 @@
+syntax = "proto3";
+package service;
+option go_package = "/";
+
+message RequestId{
+  int32 requestId = 1;
+}
+message RequestIdList{
+  repeated RequestId requestIdList = 1;
+}
+message ResponseId{
+  int32 responseId = 1;
+}
+message ResponseIdList{
+  repeated ResponseId responseIdList = 1;
+}
+service QueryService{
+  rpc QueryWithServerStream(RequestIdList) returns (stream ResponseIdList);
+  rpc QueryWithClientStream(stream RequestIdList) returns (ResponseIdList);
+
+}
