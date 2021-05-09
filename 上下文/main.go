@@ -7,7 +7,7 @@ import (
 /*
 A Ture Simple Custom Context Demo Based On TreeStruct For Comprehension Of The Context
 Ignore MultiProcessing
-Ignore Cancel Signore
+Ignore Cancel Signal
 */
 
 type customContextStruct struct {
