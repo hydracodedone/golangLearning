@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package types;
+option go_package = ".;types";
+
+message Request{
+    int32 id =1;
+}
+
+message  Response{
+    int32 id=1;
+}
+
+service RPCDemo{
+    rpc DemoRequest(Request) returns(Response);
+}

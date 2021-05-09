@@ -1,0 +1,9 @@
+syntax = "proto3";
+package service ;
+option go_package = "/";
+import "content.proto";
+//每个字段都有唯一的一个数字标识符。这些标识符是用来在消息的二进制格式中识别各个字段的，一旦开始使用就不能够再改变。
+
+service ProductService{
+  rpc GetProductStock (service.ProductRequest) returns (service.ProductResponse);
+}
