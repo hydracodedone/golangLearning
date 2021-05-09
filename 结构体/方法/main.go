@@ -17,7 +17,7 @@ func (s MyString) MyPrint() {
 func (s MyInt) MyPrint() {
 	fmt.Printf("The address of the string is %p\n", &s)
 }
-func mehtodEffection() {
+func _() {
 	var s MyString = "hello,world"
 	s.MyPrint()
 	var s2 MyInt = 2
@@ -35,17 +35,17 @@ func (s student) changeName(newName string) {
 func (s *student) changeNameForPointer(newName string) {
 	s.Name = newName
 }
-func methodInfluenceforStruct() {
+func methodInfluenceStruct() {
 	stu := student{
 		"hydra",
 		23,
 	}
-	stu.changeName("Hydracode")
+	stu.changeName("Hydra")
 	fmt.Printf("The name change is %s\n", stu.Name)
-	(&stu).changeNameForPointer("Hydracode") //优先级
+	(&stu).changeNameForPointer("Hydra") //优先级
 	fmt.Printf("The name change is %s\n", stu.Name)
 }
 
 func main() {
-	methodInfluenceforStruct()
+	methodInfluenceStruct()
 }

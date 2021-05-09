@@ -3,17 +3,15 @@ package main
 import (
 	"fmt"
 
-	"./factory"
+	"factoryAutoRegisterDemo/factory"
 
-	_ "./package1"
+	_ "factoryAutoRegisterDemo/package1"
 
-	_ "./package2"
+	_ "factoryAutoRegisterDemo/package2"
 )
 
 func main() {
-	res := factory.GolabalFactory.Create("people")
-	fmt.Printf("The res is %#v\n", res)
+	res := factory.GlobalFactory.Create("people")
 	res2 := res()("hydra", 23)
 	fmt.Printf("The res2 is %#v\n", res2)
-
 }

@@ -1,2 +1,0 @@
-2021/04/06 21:00:40 /home/hydra/Project/GolangLearning/log/main.go:33: This is a accurate log write into file
-[init]2021/04/06 21:05:46 /home/hydra/Project/GolangLearning/log/main.go:47: This is a accurage log useing default logger

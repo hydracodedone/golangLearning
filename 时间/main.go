@@ -16,7 +16,7 @@ func demoForTimer() {
 	<-timer.C
 	fmt.Println("Hello,world")
 }
-func demoForTimerUserful() {
+func demoForTimerUseful() {
 	var value chan int = make(chan int)
 	timer := time.NewTimer(time.Second)
 	go func() {

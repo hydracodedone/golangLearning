@@ -3,18 +3,27 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 )
 
 func demo1() {
 	path := "/home/hydra/Project/GolangLearning/src/GolangLearn/文件读写/main.go"
 	file, err := os.OpenFile(path, os.O_WRONLY, 0666)
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalf("Close File Fail:<%s>", err.Error())
+		}
+	}(file)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	file.Write([]byte("package main\n"))
+	_, err = file.Write([]byte("package main\n"))
+	if err != nil {
+		log.Fatalf("Write File Fail:<%s>", err.Error())
+	}
 	_, err = file.WriteString(
 		"import \"fmt\"\nfunc main(){\n\tfmt.Println(\"Hello,World\")\n}",
 	)
@@ -33,7 +42,12 @@ Write方法首先会判断写入的数据长度是否大于设置的缓冲长度
 func demo2() {
 	path := "/home/hydra/Project/GolangLearning/src/GolangLearn/文件读写/main.go"
 	file, err := os.OpenFile(path, os.O_WRONLY, 0755)
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalf("Close File Fail:<%s>", err.Error())
+		}
+	}(file)
 	if err != nil {
 		fmt.Println(err)
 		return

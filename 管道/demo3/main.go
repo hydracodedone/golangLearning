@@ -3,22 +3,22 @@ package main
 import "fmt"
 
 func demo() {
-	var mychan chan func(string) string = make(chan func(string) string, 3)
+	var myChan chan func(string) string = make(chan func(string) string, 3)
 	chan1 := func(in string) string {
 		temp := []rune(in)
 		temp[0] = 'A'
-		return (string(temp))
+		return string(temp)
 	}
 	chan2 := func(in string) string {
 		temp := []rune(in)
 		temp[1] = 'B'
-		return (string(temp))
+		return string(temp)
 	}
-	mychan <- chan1
-	mychan <- chan2
-	close(mychan)
+	myChan <- chan1
+	myChan <- chan2
+	close(myChan)
 	temp := "EDF"
-	for eachFunction := range mychan {
+	for eachFunction := range myChan {
 		temp = eachFunction(temp)
 	}
 	fmt.Println(temp)

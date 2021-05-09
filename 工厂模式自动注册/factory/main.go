@@ -2,15 +2,15 @@ package factory
 
 import "fmt"
 
-type structInitFunciton func() func(string, int) interface{}
+type structInitFunction func() func(string, int) interface{}
 type factory struct {
-	factoryMap map[string]structInitFunciton
+	factoryMap map[string]structInitFunction
 }
 
-//GolabalFactory is a golobal
-var GolabalFactory *factory = new(factory)
+//GlobalFactory is a global
+var GlobalFactory *factory = new(factory)
 
-func (f *factory) Register(name string, s structInitFunciton) {
+func (f *factory) Register(name string, s structInitFunction) {
 	res := f.factoryMap[name]
 	if res == nil {
 		f.factoryMap[name] = s
@@ -18,7 +18,7 @@ func (f *factory) Register(name string, s structInitFunciton) {
 		fmt.Println("already registered")
 	}
 }
-func (f *factory) Create(name string) structInitFunciton {
+func (f *factory) Create(name string) structInitFunction {
 	res := f.factoryMap[name]
 	if res != nil {
 		return res
@@ -28,5 +28,5 @@ func (f *factory) Create(name string) structInitFunciton {
 	}
 }
 func init() {
-	GolabalFactory.factoryMap = make(map[string]structInitFunciton, 5)
+	GlobalFactory.factoryMap = make(map[string]structInitFunction, 5)
 }

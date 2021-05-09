@@ -7,7 +7,7 @@ import (
 )
 
 type info struct {
-	InforContent string
+	InfoContent string
 }
 type AnotherInfo struct {
 	AnotherInfoContent string
@@ -24,7 +24,7 @@ func main() {
 		name: "Hydra",
 		Age:  23,
 		Information: info{
-			InforContent: "This is a test",
+			InfoContent: "This is a test",
 		},
 		AnotherInfo: AnotherInfo{
 			AnotherInfoContent: "This also is a test",
@@ -36,9 +36,12 @@ func main() {
 	} else {
 		fmt.Printf("The Result is %s\n", res)
 	}
-	umarshalValue := []byte("{\"people_age\":25,\"name\":\"Hydra\",\"Information\":{\"InforContent\":\"This is a test\"}}")
-	umarshalStruct := new(people)
-	json.Unmarshal(umarshalValue, umarshalStruct)
+	unmarshalValue := []byte("{\"people_age\":25,\"name\":\"Hydra\",\"Information\":{\"InforContent\":\"This is a test\"}}")
+	unmarshalStruct := new(people)
+	err = json.Unmarshal(unmarshalValue, unmarshalStruct)
+	if err != nil {
+		log.Fatalf("Json Unmarshal Fail:<%s>", err.Error())
+	}
 	//反序列化的时候知会反序列化struct中指定的字段
-	fmt.Printf("The unmarshal struct is %+v\n", umarshalStruct)
+	fmt.Printf("The unmarshal struct is %+v\n", unmarshalStruct)
 }

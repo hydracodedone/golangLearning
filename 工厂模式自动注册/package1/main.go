@@ -1,6 +1,8 @@
 package package1
 
-import "../factory"
+import (
+	"factoryAutoRegisterDemo/factory"
+)
 
 type people struct {
 	name string
@@ -16,5 +18,5 @@ func initPeople() func(string, int) interface{} {
 	}
 }
 func init() {
-	factory.GolabalFactory.Register("people", initPeople)
+	factory.GlobalFactory.Register("people", initPeople)
 }

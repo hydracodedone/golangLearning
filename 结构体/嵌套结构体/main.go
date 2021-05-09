@@ -33,7 +33,7 @@ type grade struct {
 /*
 嵌套结构的struct初始化的时候必须要遵循结构体定义，否则会编译报错
 */
-func nestficationStruct() {
+func notificationStruct1() {
 	stu1 := student{
 		"Hydra",
 		23,
@@ -48,7 +48,7 @@ func nestficationStruct() {
 	fmt.Printf("The stu1 pointer is %f\n", stu1.grade.pointer)
 	fmt.Printf("The stu1 pointer is %f\n", stu1.pointer)
 }
-func nestficationStruct2() {
+func notificationStruct2() {
 	//不是匿名嵌套结构体,不能使用语法塘
 	stu1 := student2{
 		"Hydra",
@@ -62,7 +62,7 @@ func nestficationStruct2() {
 	fmt.Printf("The stu1 mathgrade is %f\n", stu1.StudentGrade.MathGrade)
 	fmt.Printf("The stu1 pointer is %f\n", stu1.StudentGrade.pointer)
 }
-func nestficationStruct3() {
+func notificationStruct3() {
 	stu1 := student3{
 		"Hydra",
 		23,
@@ -76,7 +76,7 @@ func nestficationStruct3() {
 	fmt.Printf("The stu1 pointer inner is %f\n", stu1.StudentGrade.pointer)
 	fmt.Printf("The stu1 pointer is %f\n", stu1.pointer)
 }
-func nestficationStruct4() {
+func notificationStruct4() {
 	stu1 := student4{
 		"Hydra",
 		23,
@@ -91,5 +91,5 @@ func nestficationStruct4() {
 	fmt.Printf("The stu1 inner pointer is %f\n", stu1.grade.pointer)
 }
 func main() {
-	nestficationStruct4()
+	notificationStruct4()
 }

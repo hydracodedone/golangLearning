@@ -8,7 +8,7 @@ type myInterface interface {
 
 type myStruct struct{}
 
-func (mystruct myStruct) saySomething(greeting string) (greetingInfo string) {
+func (myStructInstance myStruct) saySomething(greeting string) (greetingInfo string) {
 	greetingInfo = greeting
 	return
 }

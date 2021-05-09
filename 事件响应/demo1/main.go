@@ -20,14 +20,14 @@ func CallEvent(name string, param []interface{}) {
 }
 
 func test(param []interface{}) []interface{} {
-	paramins := param[0]
-	fmt.Println(paramins)
+	params := param[0]
+	fmt.Println(params)
 	return nil
 }
 
 func main() {
-	Register("seriafunction", test)
+	Register("serialization", test)
 	temp := make([]interface{}, 1)
 	temp[0] = "hello,world"
-	CallEvent("seriafunction", temp)
+	CallEvent("serialization", temp)
 }

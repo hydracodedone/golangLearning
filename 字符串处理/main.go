@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -15,10 +16,19 @@ func demo() {
 func demo2() {
 	file, err := os.Create("./Test.txt")
 	if err != nil {
+		log.Fatalf("Create File Fail:<%s>", err.Error())
 		return
 	}
-	fmt.Fprintf(file, "Hello,World %s", "hydra")
-	file.Close()
+	_, err = fmt.Fprintf(file, "Hello,World %s", "hydra")
+	if err != nil {
+		log.Fatalf("Fprintf Fail:<%s>", err.Error())
+		return
+	}
+	err = file.Close()
+	if err != nil {
+		log.Fatalf("Close File Fail:<%s>", err.Error())
+		return
+	}
 }
 func main() {
 	demo()

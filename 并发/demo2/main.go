@@ -17,7 +17,7 @@ func goroutineWithOutVariable() {
 	}
 }
 
-func goroutineSaftyUseage() {
+func goroutineSafetyUsage() {
 	for i := 0; i < 100; i++ {
 		go func(i int) {
 			time.Sleep(time.Second)
@@ -27,6 +27,6 @@ func goroutineSaftyUseage() {
 }
 
 func main() {
-	goroutineSaftyUseage()
+	goroutineSafetyUsage()
 	time.Sleep(time.Second * 2)
 }

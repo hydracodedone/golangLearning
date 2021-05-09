@@ -11,15 +11,15 @@ type Call interface {
 type MyFunc func()
 
 //为自定义函数类型A的实例实现该接口
-func (myfunc *MyFunc) call() {
+func (myFuncInstance *MyFunc) call() {
 	fmt.Println("Hello,World")
 }
 
 func main() {
 	var caller Call
-	var myfunc MyFunc = func() {}
-	//因为myfunc为自定义函数类型的实例,且该类型实现了接口,因此可以将myfunc赋值给接口类型的变量caller
-	caller = &myfunc
+	var myFuncInstance MyFunc = func() {}
+	//因为myFuncInstance为自定义函数类型的实例,且该类型实现了接口,因此可以将myFuncInstance赋值给接口类型的变量caller
+	caller = &myFuncInstance
 	caller.call()
-	(&myfunc).call()
+	(&myFuncInstance).call()
 }

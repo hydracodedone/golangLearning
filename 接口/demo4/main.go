@@ -31,13 +31,13 @@ func demoForFunctionReturnInterface() {
 
 }
 
-func demoForTransformSpecificTypeToInteface() interface{} {
+func demoForTransformSpecificTypeToInterface() interface{} {
 	age := 23
 	return interface{}(age)
 }
 
 func main() {
 	demoForFunctionReturnInterface()
-	res := demoForTransformSpecificTypeToInteface()
+	res := demoForTransformSpecificTypeToInterface()
 	fmt.Printf("The type is %T\n", res)
 }
