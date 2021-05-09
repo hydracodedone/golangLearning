@@ -1,0 +1,16 @@
+info:
+  contact: {}
+paths:
+  /SwaggerDemo/Demo1:
+    get:
+      consumes:
+      - application/json
+      description: SwaggerDemo
+      operationId: /SwaggerDemo/Demo1
+      produces:
+      - application/json
+      responses: {}
+      summary: SwaggerDemo
+      tags:
+      - Swagger
+swagger: "2.0"

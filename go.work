@@ -1,0 +1,24 @@
+go 1.19
+
+use (
+	./antsDemo
+	./concDemo
+	./beegoWeb/BeegoApi
+	./goEs
+	./goKafka
+	./goOrm
+	./goMongo
+	./goMq
+	./goRedis
+	./ginWeb
+	./goEtcd
+	./函数init
+	./切片
+	./包管理
+	./结构体/工厂函数
+	./结构体/方法/继承字段方法的可见性
+	./工厂模式自动注册
+	./分布式锁
+	./性能分析
+	./测试
+)
