@@ -26,34 +26,34 @@ func tcpClientWithServerStream() {
 		context.Background(),
 		&service.RequestIdList{
 			RequestIdList: []*service.RequestId{
-				&service.RequestId{
+				{
 					RequestId: 1,
 				},
-				&service.RequestId{
+				{
 					RequestId: 2,
 				},
-				&service.RequestId{
+				{
 					RequestId: 3,
 				},
-				&service.RequestId{
+				{
 					RequestId: 4,
 				},
-				&service.RequestId{
+				{
 					RequestId: 5,
 				},
-				&service.RequestId{
+				{
 					RequestId: 6,
 				},
-				&service.RequestId{
+				{
 					RequestId: 7,
 				},
-				&service.RequestId{
+				{
 					RequestId: 8,
 				},
-				&service.RequestId{
+				{
 					RequestId: 9,
 				},
-				&service.RequestId{
+				{
 					RequestId: 10,
 				},
 			},
@@ -64,12 +64,15 @@ func tcpClientWithServerStream() {
 	}
 	for {
 		responseInstance, err := streamQueryServiceQueryClientInstance.Recv()
-		if err != nil && err != io.EOF {
-			log.Fatalf("Stream Response Fail:<%s>", err.Error())
-		} else if err == nil {
-			fmt.Printf("The Stream Response is %v\n", responseInstance.ResponseIdList)
+		// We Can Use Goroutine To Handle The Receive Information
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				log.Fatalf("Stream Response Fail:<%s>", err.Error())
+			}
 		} else {
-			break
+			fmt.Printf("The Stream Response is %v\n", responseInstance.ResponseIdList)
 		}
 	}
 }
@@ -87,7 +90,7 @@ func tcpClientWithClientStream() {
 	}()
 	productClient := service.NewQueryServiceClient(grpcClient)
 	streamQueryServiceQueryClientInstance, err := productClient.QueryWithClientStream(
-		context.Background(),
+		context.TODO(),
 	)
 	if err != nil {
 		log.Fatalf("Get Stream Client Fail:<%s>", err.Error())
@@ -108,7 +111,7 @@ func tcpClientWithClientStream() {
 		}
 		//final send
 		if len(requestInstance.RequestIdList) > 0 {
-			err := streamQueryServiceQueryClientInstance.SendMsg(&requestInstance)
+			err := streamQueryServiceQueryClientInstance.Send(&requestInstance)
 			if err != nil {
 				log.Fatalf("Stream Client Request Fail:<%s>", err.Error())
 			}

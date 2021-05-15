@@ -15,7 +15,6 @@ message ResponseIdList{
   repeated ResponseId responseIdList = 1;
 }
 service QueryService{
-  rpc QueryWithServerStream(RequestIdList) returns (stream ResponseIdList);
-  rpc QueryWithClientStream(stream RequestIdList) returns (ResponseIdList);
-
+  rpc QueryWithServerStream(RequestIdList) returns (stream ResponseIdList);//server stream
+  rpc QueryWithClientStream(stream RequestIdList) returns (ResponseIdList);//client stream
 }
