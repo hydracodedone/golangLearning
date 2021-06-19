@@ -24,10 +24,10 @@ func demo2() {
 	fmt.Printf("The a[7] is %#v\n", a[7]) //map获取一个不存在的参数不会报错
 	value, boolean := a[7]
 	fmt.Printf("The a[7] is %#v,exist is %t\n ", value, boolean) //map获取一个不存在的参数不会报错
-
 }
+
 func demo3() {
-	var selectFunc map[int]func() string = make(map[int]func() string, 3)
+	var selectFunc = make(map[int]func() string, 3)
 	selectFunc[1] = func() string {
 		return "Hello"
 	}
@@ -37,6 +37,23 @@ func demo3() {
 	fmt.Println(selectFunc)
 	fmt.Println(selectFunc[1]())
 }
+
+func demo4() {
+	myTestFunc := func(in map[string]string) {
+		for key := range in {
+			if key == "name" {
+				in[key] = "Hydra2"
+			}
+		}
+	}
+	myTestMap := make(map[string]string, 5)
+	myTestMap["name"] = "Hydra"
+	myTestMap["age"] = "23"
+	fmt.Printf("The Begin is %v\n", myTestMap)
+	myTestFunc(myTestMap)
+	fmt.Printf("The End is %v\n", myTestMap)
+}
+
 func main() {
-	demo2()
+	demo4()
 }
