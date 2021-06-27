@@ -4,23 +4,26 @@ import (
 	"log"
 	"time"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-func InitDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("./ormDemo/gorm.db"), &gorm.Config{})
+func InitDB(path string) *gorm.DB {
+	db, err := gorm.Open("sqlite3", path)
 	if err != nil {
 		log.Fatalf("Init DB Fail :<%s>\n", err.Error())
 	}
-
+	db.Debug()
 	return db
 }
 
 func SetDB(db *gorm.DB) {
-	dbConfig, err := db.DB()
+	dbConfig := db.DB()
+
+	err := dbConfig.Ping()
 	if err != nil {
-		log.Fatalf("Config DB Fail :<%s>\n", err.Error())
+		log.Fatalf("Ping DB Fail :<%s>\n", err.Error())
+
 	}
 	dbConfig.SetMaxIdleConns(2)
 	dbConfig.SetMaxOpenConns(1)
@@ -29,21 +32,15 @@ func SetDB(db *gorm.DB) {
 }
 
 func MigrateDB(db *gorm.DB, models ...interface{}) {
-	err := db.AutoMigrate(models...)
-	if err != nil {
-		log.Fatalf("AutoMigrate DB Fail :<%s>\n", err.Error())
-	}
+	db.AutoMigrate(models...)
 }
 
 func CleanDB(db *gorm.DB) {
+
 }
 func CloseDB(db *gorm.DB) {
-	dbConfig, err := db.DB()
+	err := db.Close()
 	if err != nil {
-		log.Fatalf("Config DB Fail :<%s>\n", err.Error())
-	}
-	err = dbConfig.Close()
-	if err != nil {
-		log.Fatalf("Close DB Fail :<%s>\n", err.Error())
+		log.Fatalf("Close DB Fail:%s\n", err.Error())
 	}
 }
