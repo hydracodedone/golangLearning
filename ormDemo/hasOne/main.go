@@ -1,37 +1,85 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/jinzhu/gorm"
 	"hydracode.com/ormDemo/common"
 )
 
-type company struct {
+type Company struct {
 	ID          int
 	CompanyName string
-	User        user
+	User        User
 }
-type user struct {
+type User struct {
 	ID        int //default foreignkey
 	Name      string
-	UserCode  string
-	companyID string //default reference key
+	UserCode  int
+	CompanyID int //default reference key
 }
 
-type companyWithCustomForeignKey struct {
+type CompanyWithCustomForeignKey struct {
 	ID          int
 	CompanyName string
-	User        user `gorm:"foreignKey:UserCode"`
+	User        User `gorm:"foreignKey:UserCode"`
 }
 
-type companyWithCustomReferenceKey struct {
+type CompanyWithCustomReferenceKey struct {
 	ID          int
 	CompanyName string
-	UserName    string
-	User        user `gorm:"references:UserName"`
+	UID         int
+	User        User `gorm:"references:UID"`
+}
+
+func insertCompany(db *gorm.DB) {
+	insertCompany := new(Company)
+	insertCompany.CompanyName = "cmp1"
+	insertCompany.User = User{
+		Name:     "u1",
+		UserCode: 1001,
+	}
+	db.Debug().Create(insertCompany)
+	fmt.Printf("The Insert Result Is %+v\n", insertCompany)
+
+}
+func preloadQueryCompany(db *gorm.DB) {
+	queryCompany := new(Company)
+	db.Debug().Model(queryCompany).Preload("User").First(queryCompany)
+	fmt.Printf("The Query Result Is %+v\n", queryCompany)
+}
+func insertCompanyWithCustomForeignKey(db *gorm.DB) {
+	insertCompany := new(CompanyWithCustomForeignKey)
+	insertCompany.CompanyName = "cmp2"
+	insertCompany.User = User{
+		Name:     "u2",
+		UserCode: 1002,
+	}
+	db.Debug().Create(insertCompany)
+	fmt.Printf("The Insert Result Is %+v\n", insertCompany)
+
+}
+func preloadQueryCompanyWithCustomForeignKey(db *gorm.DB) {
+	queryCompany := new(CompanyWithCustomForeignKey)
+	db.Debug().Model(queryCompany).Preload("User").Where(map[string]interface{}{"company_name": "cmp2"}).Find(queryCompany)
+	fmt.Printf("The Query Result Is %+v\n", queryCompany)
+}
+func preloadQueryCompanyWithCustomReferenceKey(db *gorm.DB) {
+	queryCompany := new(CompanyWithCustomReferenceKey)
+	db.Debug().Model(queryCompany).Preload("User").Where(map[string]interface{}{"company_name": "cmp1"}).Find(queryCompany)
+	fmt.Printf("The Query Result Is %+v\n", queryCompany)
+}
+func relatedQueryCompanyWithCustomReferenceKey(db *gorm.DB) {
+	queryCompany := new(CompanyWithCustomReferenceKey)
+	db.Debug().Model(queryCompany).Where(map[string]interface{}{"company_name": "cmp1"}).Find(queryCompany)
+	db.Debug().Model(queryCompany).Related(&queryCompany.User, "UID")
+	fmt.Printf("The Query Result Is %+v\n", queryCompany)
 }
 
 func main() {
 	db := common.InitDB("./hasOne/gorm.db")
-	common.MigrateDB(db, &company{}, &user{}, &companyWithCustomForeignKey{}, &companyWithCustomReferenceKey{})
+	common.MigrateDB(db, &Company{}, &User{}, &CompanyWithCustomForeignKey{}, &CompanyWithCustomReferenceKey{})
 	common.SetDB(db)
+	relatedQueryCompanyWithCustomReferenceKey(db)
 	common.CloseDB(db)
 }
