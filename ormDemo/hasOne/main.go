@@ -12,17 +12,18 @@ type Company struct {
 	CompanyName string
 	User        User
 }
+
 type User struct {
-	ID        int //default foreignkey
-	Name      string
-	UserCode  int
-	CompanyID int //default reference key
+	ID          int //default foreignkey
+	Name        string
+	CompanyCode int
+	CompanyID   int //default reference key
 }
 
 type CompanyWithCustomForeignKey struct {
 	ID          int
 	CompanyName string
-	User        User `gorm:"foreignKey:UserCode"`
+	User        User `gorm:"foreignKey:CompanyCode"`
 }
 
 type CompanyWithCustomReferenceKey struct {
@@ -36,8 +37,8 @@ func insertCompany(db *gorm.DB) {
 	insertCompany := new(Company)
 	insertCompany.CompanyName = "cmp1"
 	insertCompany.User = User{
-		Name:     "u1",
-		UserCode: 1001,
+		Name:        "u1",
+		CompanyCode: 1001,
 	}
 	db.Debug().Create(insertCompany)
 	fmt.Printf("The Insert Result Is %+v\n", insertCompany)
@@ -52,8 +53,8 @@ func insertCompanyWithCustomForeignKey(db *gorm.DB) {
 	insertCompany := new(CompanyWithCustomForeignKey)
 	insertCompany.CompanyName = "cmp2"
 	insertCompany.User = User{
-		Name:     "u2",
-		UserCode: 1002,
+		Name:        "u2",
+		CompanyCode: 1002,
 	}
 	db.Debug().Create(insertCompany)
 	fmt.Printf("The Insert Result Is %+v\n", insertCompany)
