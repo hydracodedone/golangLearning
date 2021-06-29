@@ -7,23 +7,25 @@ import (
 	"hydracode.com/ormDemo/common"
 )
 
-type Company struct {
-	ID          int
-	CompanyName string
-	User        User
-}
-
 type User struct {
-	ID          int //default foreignkey
-	Name        string
-	CompanyCode int
-	CompanyID   int //default reference key
+	ID       int //default foreignkey
+	Name     string
+	UserCode int
+
+	CompanyID int //default reference key
 }
 
+type Company struct {
+	ID   int
+	Name string
+	User User
+}
+
+//CompanyWithCustomForeignKey Abandon User Table  CompanyID Column
 type CompanyWithCustomForeignKey struct {
-	ID          int
-	CompanyName string
-	User        User `gorm:"foreignKey:CompanyCode"`
+	ID   int
+	Name string
+	User User `gorm:"foreignKey:UserCode"`
 }
 
 type CompanyWithCustomReferenceKey struct {
@@ -35,10 +37,9 @@ type CompanyWithCustomReferenceKey struct {
 
 func insertCompany(db *gorm.DB) {
 	insertCompany := new(Company)
-	insertCompany.CompanyName = "cmp1"
+	insertCompany.Name = "cmp1"
 	insertCompany.User = User{
-		Name:        "u1",
-		CompanyCode: 1001,
+		Name: "u1",
 	}
 	db.Debug().Create(insertCompany)
 	fmt.Printf("The Insert Result Is %+v\n", insertCompany)
@@ -51,10 +52,10 @@ func preloadQueryCompany(db *gorm.DB) {
 }
 func insertCompanyWithCustomForeignKey(db *gorm.DB) {
 	insertCompany := new(CompanyWithCustomForeignKey)
-	insertCompany.CompanyName = "cmp2"
+	insertCompany.Name = "cmp2"
 	insertCompany.User = User{
-		Name:        "u2",
-		CompanyCode: 1002,
+		Name:     "u2",
+		UserCode: 1002,
 	}
 	db.Debug().Create(insertCompany)
 	fmt.Printf("The Insert Result Is %+v\n", insertCompany)
@@ -81,6 +82,6 @@ func main() {
 	db := common.InitDB("./hasOne/gorm.db")
 	common.MigrateDB(db, &Company{}, &User{}, &CompanyWithCustomForeignKey{}, &CompanyWithCustomReferenceKey{})
 	common.SetDB(db)
-	relatedQueryCompanyWithCustomReferenceKey(db)
+	insertCompanyWithCustomForeignKey(db)
 	common.CloseDB(db)
 }
