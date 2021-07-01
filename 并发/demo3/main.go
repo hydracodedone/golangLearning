@@ -17,7 +17,7 @@ type  WaitGroup struct {
 	// for the sema.
 	state1 [3]uint32
 }
-waigGroup 是一个struct,因此在程序中不要作为形参传入
+waitGroup 是一个struct,因此在程序中不要作为形参传入
 */
 func waitGroupDemo() {
 	for i := 0; i < 100; i++ {
