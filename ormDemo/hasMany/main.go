@@ -7,7 +7,7 @@ import (
 type User struct {
 	ID         int
 	UName      string
-	CreditCard CreditCard
+	CreditCard []CreditCard
 }
 type CreditCard struct {
 	ID     int
@@ -16,7 +16,7 @@ type CreditCard struct {
 }
 
 func main() {
-	db := common.InitDB("./hasOne/gorm.db")
+	db := common.InitDB("./hasMany/gorm.db")
 	common.MigrateDB(db, &CreditCard{}, &User{})
 	common.SetDB(db)
 	common.CloseDB(db)

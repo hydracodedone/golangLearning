@@ -7,16 +7,16 @@ import (
 type User struct {
 	ID         int
 	UName      string
-	CreditCard CreditCard
+	CreditCard CreditCard `gorm:"foreignKey:UserRefer"`
 }
 type CreditCard struct {
-	ID     int
-	CName  string
-	UserID int
+	ID        int
+	CName     string
+	UserRefer int
 }
 
 func main() {
-	db := common.InitDB("./hasOne/gorm.db")
+	db := common.InitDB("./hasOneForeignKey/gorm.db")
 	common.MigrateDB(db, &CreditCard{}, &User{})
 	common.SetDB(db)
 	common.CloseDB(db)
