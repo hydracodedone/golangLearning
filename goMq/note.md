@@ -1,14 +1,9 @@
 # RABBITMQ
-## 未整理
-延迟队列
-备份队列
-惰性对列
-镜像队列
-TTL队列
 ## 事务
-txSelect()：将当前channel设置成transaction模式。
-txCommit()：提交事务。
-txRollback()：回滚事务。
+
+	txSelect()：将当前channel设置成transaction模式。
+	txCommit()：提交事务。
+	txRollback()：回滚事务。
 
 Tx puts the channel into transaction mode on the server.  All publishings and
 acknowledgments following this method will be atomically committed or rolled
@@ -24,10 +19,15 @@ the channel is in a transaction is not defined.
 Once a channel has been put into transaction mode, it cannot be taken out of
 transaction mode.  Use a different channel for non-transactional semantics.
 
-不常用
+总结:
+
+	不常用
 
 ## 各种队列
+### 仲裁队列
+仲裁队列是 3.8 版本以后才有的新功能，用来替代镜像队列，属于主从模式，支持基于 Raft 协议强一致的主从数据同步。虽然请求仍然都是由主节点进行操作，然后同步到从节点中。但是对于任何节点来说，既可能是某个仲裁队列的主节点，也可能是其它仲裁队列的从节点。因此也具有分散节点压力，提高并发访问的特点。另外如果主节点挂了，其中的某个从节点就会变成主节点，并在其它节点上尽可能创建出新的主节点，保障主从数量一致。
 
+一个仲裁队列的默认数量是 5，即一个主节点，4个副本节点，如果集群中节点数量少于 5 ，比如我们搭建了 3 个节点的集群，那么创建的仲裁队列就是 1 主 2 副本。当然如果集群中的节点数大于 5 个的话，那么就只会在 5 个节点中创建出 1 主 4 副本。
 ### 优先级队列
 RabbitMQ一开始并没有优先级队列，而是在3.5.0版本才实现的优先级队列。
 
@@ -57,12 +57,67 @@ RabbitMQ不支持通过策略的方式设置队列的优先级！因此，等到
 		如果两者都设置了过期时间，以时间短的为准。
 	队列达到最大长度（队列满了，无法再添加数据到 mq 中）
 		队列长度设置 x-max-legth
-	消息被拒绝（basic.reject 或 basic.nack）并且 requeue=false（不再重新入队）
+	消息被拒绝（basic.reject 或 basic.nack）并且 requeue=false（不再重新入队）如果不设置死信队列,消息将会被丢弃
+
+#### 死信对消息的影响
+
+	交换机的名称会改变
+		进入死信交换机的消息中exchangeName将会变为死信交换机的名称
+	
+	消息路由可能发生改变
+		如果我们配置了 x-dead-letter-routing-key 指定死信路由键,那么消息的路由将变成x-dead-letter-routing-key,否则不变
+
+	消息头发生改变
+		一条消息变为死信消息之后，其Header中会有一些额外的参数。
+
+			x-first-death-exchange
+			第一次成为死信之前的交换机的名称。
+
+			x-first-death-reason
+			第一次成为死信的原因。
+
+				rejected：由于default-requeue-rejected 参数被设置为false，消息在重新进入队列时被拒绝。
+
+				expired ：消息的存活时间超过了设置的过期时间。
+
+				maxlen ： 队列内消息数量超过队列最大容量。
+
+				delivery_limit：消息返回的次数超过了限制（通过仲裁队列的策略参数delivery-limit设置）
+
+			x-first-death-queue
+			第一次成为死信之前的队列的名称。
+
+			x-death
+			历次被投入死信交换机的信息列表，同一个消息每次进入一个死信交换机，这个数组的信息就会被更新
+				x-death是一个json串，其有以下几个属性：
+
+				reason：该消息变为死信消息的原因
+
+				count：该消息投递到死信队列中的次数
+
+				exchange：该消息在投递到死信队列之前的交换机
+
+				time：该消息被投递到死信队列的时间戳
+
+				routing-keys：该消息在投递到死信队列之前的路由键
+
+				queue：该消息在投递到死信队列之前所在的队列
+
+				original-expiration：消息的原始过期属性。如果一个消息是因为超过存活时间而过期，会展示这个属性。另外，过期属性将从死信消息中删除，以防止其再次过期。
+
 #### 架构
 ![Alt text](image.png)
 ### 延时队列
 	通过DLX+TTL(死信队列+过期时间)
 	发送信息给normal,normal不进行消费,并且配置死信队列,消息过期后,投递到死信队列,死信队列进行业务处理(完成延时)
+
+	需要注意通过RabbitMDLX+TT实现延迟队列，虽然一定程度上能解决问题，但是并不完美，尤其是对于消息的超时时间不固定的场景。
+	这是因为RabbitMQ的队列是先进先出的，它首先检查队列头部的消息是否过期，如果第一条消息过期了，就会将该消息投递到死信队列,如果第一条消息没有过期，即使第二个消息已经过期了，RabbitMQ也不会先将第二条消息丢到死信队列的
+	可以使用rabbitmq-delayed-message-exchange插件,安装成功后
+	创建 类型为x-delayed-message交换机, 然后在创建交换机的时候指定x-delayed-type参数为direct,作为业务交换机,生产者发送消息时候不在指定过期时间,而是在消息的headers中添加x-delay参数指定延迟时间,这样不需要配置死信队列了,消费者接收到的消息顺序是按照x-delay参数的决定的,x-delay越短,则消息越先被接收
+总结:
+	推荐使用rabbitmq-delayed-message-exchange插件
+
 ## 公平性
 在开启消费确认,RabbitMQ 提供了一种 qos （服务质量保证）功能，即在非自动确认消息的前提下，如果一定数目的消息（Channel.Qos）未被确认前，不进行消费新的消息。
 
@@ -70,9 +125,14 @@ RabbitMQ不支持通过策略的方式设置队列的优先级！因此，等到
 	
 	To get round-robin behavior between consumers consuming from the same queue on different connections, set the prefetch count to 1, and the next available message on the server will be delivered to the next available consumer. 如果是不同的connection对同一queue的消费,配置 prefetch count=1来实现负载均衡(公平发送)
 
-	prefetch_size 一般设置未0,表示对消息的大小不做设置
+	prefetch_size 一般设置未0,表示对消息的大小不做设置(生产环境有可能产生OOM)
 
 	prefetch_count 表所当前consumer在未ack之前,能够预先获取到几次消息,比如设置为2,表示该consumer能够先获取两次消息(消息的处理为异步处理,需要一定的处理时间才能够ack,能够同一时间接收大量消息)第三次获取消息时,由于前两次消息尚未ack,此时第三次消息是收不到的
+
+Qos的原理:
+
+	prefetch count指定了该信道上未确认传递的消息的最大数量
+	原理是有一个未确认的传递标签（delivery tags，一个64位的long类型的数字，最大值是9223372036854775807）的滑动窗口。通过qos参数设置预取值（prefetch count），来限制这个滑动窗口的大小,该值设置为0，表示不限制prefetch count的大小，这有可能导致消费者端OOM
 ## 两种消费模式
 	拉模式
 	channel.Get 每次获取一条
@@ -169,6 +229,65 @@ Exchanges declared as `internal` do not accept publishings. Internal
 exchanges are useful when you wish to implement inter-exchange topologies
 that should not be exposed to users of the broker.
 (internal 表示该交换机不能接受生产者发送,死信队列可以采用)
+## 队列的长度与溢出
+
+### 队列长度限制
+
+队列长度的最大限制分为两种情况：
+
+		队列中消息的总量（max-length）
+		队列中消息的总字节数（max-length-bytes）。
+
+我们可以只设置其中一个，也可两个同时设置。
+注意，只有处于ready状态（在RabbitMQ中，消息有2种状态：ready 和 unacked）的消息被计数，未被确认的消息不会受到limit的限制
+
+### 队列长度配置
+	
+	x-max-length-bytes 设置队列中可以存储处于ready状态消息的数量。
+	x-max-length 队列中可以存储处于ready状态消息占用内存的大小(只计算消息体的字节数，不计算消息头、消息属性占用的字节数)
+### 队列的溢出
+
+当设置了最大队列长度或大小并达到最大值时，x-overflow属性默认的处理策略是丢掉队列的头部的消息，或者将队列头部的消息投递到死信交换机
+当然也可以通过x-overflow参数来指定处理逻辑。
+x-overflow参数的可选值有
+
+	drop-head
+	丢弃队列头部的消息（默认的处理策略）。
+
+	reject-publish
+	丢弃队列尾部的消息。
+
+	reject-publish-dlx
+	丢弃队列尾部的消息，并拒绝发送消息到死信交换机。
+
+另外，如果启用了发布确认功能，生产者将会收到一个nack响应
+如果消息被路由到多个队列并被其中至少一个队列拒绝，则信道将通过basic.nack通知发布者。
+## 交换机类型
+
+在RabbitMQ中，常用的有4中Exchange，分别是direct、topic、fanout、headers,当然,mq提供了插件能力,可以通过安装插件的方式支持其他类型的交换机,如x-delayed-message交换机
+
+默认的交换机，称为default exchange，其本质也是一个direct exchange
+
+### direct 交换机
+此种类型的交换机是通过routing key 和队列绑定在一起的。
+通过一个routing key，交换机可以绑定一个队列，也可以同时绑定多个队列。
+如果一个交换机绑定了多个队列，则交换机会将消息分别路由给每一个队列，也就是说每个队列都会得到一份全量的消息。
+### topic 交换机
+和direct exchange类似，topic exchange也是根据routing key，将exchange和queue绑定在一起。
+
+区别在于，direct exchange的routing key 是精确匹配，而topic exchange的的routing key 是模式匹配，类似于正则表达式匹配。
+
+routing key 可以是类似 *.orange.* 或者 lazy.# 的表达式。其中，* (星) 代表一个单词，# (hash) 代表0个或多个单词。
+### fanout 交换机
+和direct exchange、topic exchange不同，fanout exchange不使用routing key，它会将消息路由到所有与其绑定的队列。
+
+fanout exchange是消息广播路由的理想选择。
+
+和direct exchange的一个交换机绑定多个队列的情况一样，绑定了fanout exchange的队列，都会接收到一份全量的消息。
+### header 交换机
+headers exchange是根据Message的一些头部信息来分发过滤Message的，它会忽略routing key的属性，如果Header信息和message消息的头信息相匹配，那么这条消息就匹配上了。
+
+有一个重要参数x-match：当“x-match”参数设置为“any”时，只要一个匹配的header 属性值就足够了；当“x-match”设置为“all”时，意味着所有值都必须匹配，才能将交换机和队列绑定上。
 ## 面试问题
 ### 如何保证消息的顺序性
 	
@@ -252,4 +371,3 @@ func (d *DeferredConfirmation) Done() <-chan struct{}
 func (d *DeferredConfirmation) Wait() bool //阻塞直至发布确认,返回值true表示发布确认
 func (d *DeferredConfirmation) WaitContext(ctx context.Context) (bool, error)
 ````
-
