@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"sync"
+	"time"
 )
 
 /*
@@ -161,19 +163,71 @@ func review12() {
 }
 
 func review13() {
-	//append 不会改变内存地址,但是一旦append后的切片的cap超过了初始化时候的容量,则不会再与被切片的对象之间存在联系
 	var a [10]int
 	b := a[6:9]
-	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, &b, cap(b), a)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, b, cap(b), a)
 	b[0] = 1
-	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, &b, cap(b), a)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, b, cap(b), a)
 	b = append(b, 2)
-	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, &b, cap(b), a)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, b, cap(b), a)
 	b = append(b, 3)
-	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, &b, cap(b), a)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, b, cap(b), a)
 	b[0] = 100
-	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, &b, cap(b), a)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the a is %v\n", b, b, cap(b), a)
+}
+
+func review14() {
+	var wg sync.WaitGroup
+
+	var b []int = make([]int, 5)
+	getSliceInfoFunc := func(b []int) {
+		defer wg.Done()
+		fmt.Printf("g The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+		time.Sleep(time.Second * 3)
+		fmt.Printf("g The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+	}
+	wg.Add(1)
+	go getSliceInfoFunc(b)
+	b = append(b, 1)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+	wg.Wait()
+}
+func review15() {
+	var a [10]int = [10]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	var b []int = a[1:2]
+	getSliceInfoFunc := func(b []int) {
+		fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+		b = append(b, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+		fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+	}
+	getSliceInfoFunc(b)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+	fmt.Printf("The a is %v\n", a)
+}
+func review16() {
+	var b []int
+	getSliceInfoFunc := func(b []int) {
+		fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+		b = make([]int, 3, 4)
+		fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+	}
+	getSliceInfoFunc(b)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+}
+
+func review17() {
+	var a []int = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	b := append(a[0:3], a[5:]...)
+	fmt.Printf("The b is %v,the address of the b is %p,the cap b is %d,the len b is %d\n", b, b, cap(b), len(b))
+}
+func review18() {
+	var a []int = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	for range a { //此处的a是拷贝
+		//访问的是外部的a变量
+		a = append(a, 1)
+	}
+	fmt.Println(a)
 }
 func main() {
-	review13()
+	review17()
 }

@@ -18,9 +18,6 @@ cap : 当前 slice 的容量，同时也是底层数组 array 的长度， 8 byt
 slice不支持并发读写，所以并不是线程安全的
 多个切片如果共享同一个底层数组，这种情况下，对其中一个切片或者底层数组的更改，会影响到其他切片
 
-如果新申请容量比两倍原有容量大，那么扩容后容量大小 等于 新申请容量
-如果原有 slice 长度小于 1024， 那么每次就扩容为原来的 2 倍
-如果原 slice 大于等于 1024， 那么每次扩容就扩为原来的 1.25 倍
 如果我们只用到一个slice的一小部分，那么底层的整个数组也将继续保存在内存当中。当这个底层数组很大，或者这样的场景很多时，可能会造成内存急剧增加，造成崩溃。
 空切片和 nil 切片的区别在于，空切片指向的地址不是nil，指向的是一个内存地址，但是它没有分配任何内存空间，即底层元素包含0个元素。
 最后需要说明的一点是。不管是使用 nil 切片还是空切片，对其调用内置函数 append，len 和 cap 的效果都是一样的。
@@ -40,11 +37,6 @@ func demo1() {
 	a = append(a, []int{1, 2, 3}...)
 	fmt.Printf("The address of the a is %p, a is %v,cap is %d,len is %d\n", a, a, cap(a), len(a))
 	/*
-		在切片开头添加元素一般都会导致内存的重新分配，而且会导致已有元素全部被复制 1 次，因此，从切片的开头添加元素的性能要比从尾部追加元素的性能差很多
-	*/
-	a = append([]int{111}, a...)
-	fmt.Printf("The address of the a is %p, a is %v,cap is %d,len is %d\n", a, a, cap(a), len(a))
-	/*
 		切片的另一种申明方式
 	*/
 	var b []int = []int{0: 1, 2: 3}
@@ -58,9 +50,10 @@ func demo1() {
 		3 通过数组slice得到的切片的容量是切片第一个元素对应数组中的位置到数组最后一个元素的之间的元素的个数
 	*/
 	var c [3]int = [3]int{1, 2, 3}
+	//需要注意数组切片的cap
 	var d []int = c[1:2]
-	fmt.Printf("The address of the d is %p, d is %v,cap is %d,len is %d\n", d, d, cap(d), len(d))
 	fmt.Printf("The array c is %v\n", c)
+	fmt.Printf("The address of the d is %p, d is %v,cap is %d,len is %d\n", d, d, cap(d), len(d))
 	d[0] = 100
 	fmt.Printf("The address of the d is %p, d is %v,cap is %d,len is %d\n", d, d, cap(d), len(d))
 	fmt.Printf("The array c is %v\n", c)
@@ -83,6 +76,10 @@ func demo1() {
 	var h []int = f[2:3]
 	fmt.Printf("The address of the h is %p, h is %v,cap is %d,len is %d\n", h, h, cap(h), len(h))
 	h = append(h, 100)
+	fmt.Printf("The array f is %v\n", f)
+	fmt.Printf("The address of the g is %p, g is %v,cap is %d,len is %d\n", g, g, cap(g), len(g))
+	fmt.Printf("The address of the h is %p, h is %v,cap is %d,len is %d\n", h, h, cap(h), len(h))
+	h = append(h, 1111, 1111, 1111, 1111, 1111, 1111, 1111, 1111, 1111)
 	fmt.Printf("The array f is %v\n", f)
 	fmt.Printf("The address of the g is %p, g is %v,cap is %d,len is %d\n", g, g, cap(g), len(g))
 	fmt.Printf("The address of the h is %p, h is %v,cap is %d,len is %d\n", h, h, cap(h), len(h))
@@ -115,11 +112,13 @@ func demo3() {
 	var a [10]int = [10]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	fmt.Printf("The a is %v\n", a)
 	var b []int = a[0:5]
-	fmt.Printf("The address of the  is %p,  %v,cap is %d,len is %d\n", b, b, cap(b), len(b))
+	first := b[:1]
+	second := b[3:]
+	fmt.Printf("The address of the  is %p,  %v,cap is %d,len is %d\n", first, first, cap(first), len(first))
+	fmt.Printf("The address of the  is %p,  %v,cap is %d,len is %d\n", second, second, cap(second), len(second))
 	b = append(b[:1], b[3:]...)
 	fmt.Printf("The address of the  is %p,  %v,cap is %d,len is %d\n", b, b, cap(b), len(b))
 	fmt.Printf("The a is %v\n", a)
-
 }
 func demo4() {
 	/*
@@ -140,15 +139,6 @@ func demo4() {
 
 func demo5() {
 	/*
-		slice无法比较
+		slice无法比较,slice只能和nil比较
 	*/
 }
-
-	// func main() {
-	// 	demo1()
-	// 	demo2()
-	// 	demo3()
-	// 	demo4()
-	// }
-
-	
