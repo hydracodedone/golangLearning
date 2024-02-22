@@ -244,9 +244,6 @@ type Client struct {
     // Timeout：超时设置
     Timeout time.Duration
 }
-type RoundTripper interface {
-	RoundTrip(*Request) (*Response, error)
-}
 var DefaultClient = &Client{}
 ```
 ### 请求参数
@@ -328,6 +325,18 @@ func (c *Client) send(req *Request, deadline time.Time) (resp *Response, didTime
 	...
 	return resp, nil, nil
 }
+
+func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, didTimeout func() bool, err error) {
+	...
+	resp, err = rt.RoundTrip(req)
+	...
+	return resp, nil, nil
+}
+```
+	
+send函数中的
+```Go
+resp, didTimeout, err = send(req, c.transport(), deadline)
 //正常情况下,没有初始化c.Transport,因此使用的是DefaultTransport
 func (c *Client) transport() RoundTripper {
 	if c.Transport != nil {
@@ -335,8 +344,19 @@ func (c *Client) transport() RoundTripper {
 	}
 	return DefaultTransport
 }
+```
+Tranport 是 RoundTripper接口的实现类，核心字段包括：
 
+	idleConn：空闲连接 map，实现复用
+	DialContext：新连接生成器
 
+而RoundTripper 是通信模块的 interface，需要实现方法 Roundtrip，即通过传入请求 Request，与服务端交互后获得响应 Response.
+```Go
+type RoundTripper interface {
+    RoundTrip(*Request) (*Response, error)
+}
+```
+```Go
 type Transport struct {
 	idleMu       sync.Mutex
 	closeIdle    bool                                // user has requested to close all idle conns
@@ -393,14 +413,22 @@ var DefaultTransport RoundTripper = &Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 }
 
-func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, didTimeout func() bool, err error) {
-	...
-	resp, err = rt.RoundTrip(req)
-	...
-	return resp, nil, nil
-}
+
 type RoundTripper interface {
 	RoundTrip(*Request) (*Response, error)
+}
+
+func (t *Transport) RoundTrip(req *Request) (*Response, error) {
+	// The Transport has a documented contract that states that if the DialContext or
+	// DialTLSContext functions are set, they will be used to set up the connections.
+	// If they aren't set then the documented contract is to use Dial or DialTLS, even
+	// though they are deprecated. Therefore, if any of these are set, we should obey
+	// the contract and dial using the regular round-trip instead. Otherwise, we'll try
+	// to fall back on the Fetch API, unless it's not available.
+	if t.Dial != nil || t.DialContext != nil || t.DialTLS != nil || t.DialTLSContext != nil || jsFetchMissing {
+		return t.roundTrip(req)
+	}
+	...
 }
 
 // roundTrip implements a RoundTripper over HTTP.
