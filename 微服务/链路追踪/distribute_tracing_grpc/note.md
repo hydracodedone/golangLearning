@@ -1,0 +1,1 @@
+protoc -I . --go_out=. --go-grpc_out=. distribute_tracing_grpc/proto/meta.proto

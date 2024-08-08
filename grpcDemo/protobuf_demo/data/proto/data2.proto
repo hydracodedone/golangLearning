@@ -1,0 +1,9 @@
+syntax ="proto3";
+
+package data;
+
+option go_package="protobuf_demo/data/data_types;data_types";
+
+message request{
+    string id=1;
+}

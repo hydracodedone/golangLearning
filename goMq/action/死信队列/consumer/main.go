@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	normalQueueName := "normal_queue"
+	normalQueueName := "dead_queue"
 	consumeName := "hydra"
 	exclusive := true
 	noWait := true

@@ -2,7 +2,6 @@ package consumer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"go-kafka/constant"
 	"sync"
@@ -11,168 +10,137 @@ import (
 	"github.com/IBM/sarama"
 )
 
-var CLIENT sarama.Client
-
-func initClient() sarama.Client {
-	if CLIENT == nil {
-		config := sarama.NewConfig()
-		config.Consumer.Offsets.AutoCommit.Enable = true              // 开启自动 commit offset
-		config.Consumer.Offsets.AutoCommit.Interval = 1 * time.Second // 自动 commit时间间隔
-		CLIENT, err := sarama.NewClient([]string{constant.KAFKA_ADDRESS}, config)
-		if err != nil {
-			fmt.Printf("Error creating client err: %s\n", err.Error())
-			return nil
-		} else {
-			return CLIENT
-		}
-	}
-	return CLIENT
+type offSetConsumer struct {
+	config               *sarama.Config
+	consumer             sarama.Consumer
+	offsetManager        sarama.OffsetManager
+	client               sarama.Client
+	partitionManagerMap  map[int32]sarama.PartitionOffsetManager
+	partitionConsumerMap map[int32]sarama.PartitionConsumer
 }
 
-func clientClose(client sarama.Client) {
-	if client == nil {
-		return
-	} else {
-		fmt.Println("client close")
-		err := client.Close()
+func GetOffsetConsumer() *offSetConsumer {
+	ap := &offSetConsumer{}
+	ap.partitionManagerMap = make(map[int32]sarama.PartitionOffsetManager)
+	ap.partitionConsumerMap = make(map[int32]sarama.PartitionConsumer)
+	ap.initSyncOffsetConsumerConfig()
+	ap.initSyncOffsetConsumer()
+	return ap
+}
+
+func (ap *offSetConsumer) initSyncOffsetConsumerConfig() {
+	config := sarama.NewConfig()
+	ap.config = config
+	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	ap.config.Consumer.Offsets.AutoCommit.Enable = true //自动提交
+	config.Consumer.Offsets.AutoCommit.Interval = 1 * time.Second
+}
+func (ap *offSetConsumer) initSyncOffsetConsumer() {
+	client, err := sarama.NewClient([]string{constant.KAFKA_ADDRESS}, ap.config)
+	if err != nil {
+		panic(err)
+	}
+	ap.client = client
+	consumer, err := sarama.NewConsumerFromClient(client)
+	if err != nil {
+		panic(err)
+	}
+	ap.consumer = consumer
+	offsetManager, err := sarama.NewOffsetManagerFromClient(constant.CONSUMER_GROUP, client)
+	if err != nil {
+		panic(err)
+	}
+	ap.offsetManager = offsetManager
+	parititionNumber, err := ap.client.Partitions(constant.TOPIC)
+	if err != nil {
+		panic(err)
+	}
+	for eachPartionNumber := range parititionNumber {
+		parititionOffsetManager, err := ap.offsetManager.ManagePartition(constant.TOPIC, int32(eachPartionNumber))
 		if err != nil {
 			panic(err)
 		}
-	}
-}
-
-func getConumserGroupOffsetManager(client sarama.Client, consumerGroupID string) sarama.OffsetManager {
-	if client == nil {
-		return nil
-	} else {
-		offsetManager, err := sarama.NewOffsetManagerFromClient(consumerGroupID, client)
-		if err != nil {
-			return nil
+		ap.partitionManagerMap[int32(eachPartionNumber)] = parititionOffsetManager
+		nextOffset, _ := parititionOffsetManager.NextOffset()
+		var offset int64 = 0
+		if nextOffset == -1 {
+			offset = 0
 		} else {
-			return offsetManager
+			offset = nextOffset
 		}
-	}
-}
-func offsetManagerClose(offsetManager sarama.OffsetManager) {
-	if offsetManager == nil {
-		return
-	} else {
-		// 防止自动提交间隔之间的信息被丢掉
-		offsetManager.Commit()
-		err := offsetManager.Close()
+		partitionConsumer, err := ap.consumer.ConsumePartition(constant.TOPIC, int32(eachPartionNumber), offset)
 		if err != nil {
 			panic(err)
 		}
+		ap.partitionConsumerMap[int32(eachPartionNumber)] = partitionConsumer
 	}
 }
-func getPartitionManagerOfOffsetManager(offsetManager sarama.OffsetManager, topic string, partition int32) sarama.PartitionOffsetManager {
-	if offsetManager == nil {
-		return nil
-	} else {
-		partitionManagerOfOffsetManager, err := offsetManager.ManagePartition(topic, partition)
+
+func (ap *offSetConsumer) closeAll() {
+	fmt.Println("begin to close")
+	for parititionNumber, eachPartitionConsumer := range ap.partitionConsumerMap {
+		err := eachPartitionConsumer.Close()
 		if err != nil {
-			return nil
-		} else {
-			return partitionManagerOfOffsetManager
+			panic(err)
+		}
+		fmt.Printf("eachPartitionConsumer:[topic:%s partitionNumber:%d] closed\n", constant.TOPIC, parititionNumber)
+	}
+	fmt.Println(ap.partitionManagerMap)
+	for parititionNumber, eachPartionOffsetManager := range ap.partitionManagerMap {
+		err := eachPartionOffsetManager.Close()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("partitionOffsetManager:[topic:%s partitionNumber:%d] closed\n", constant.TOPIC, parititionNumber)
+	}
+
+	if ap.offsetManager != nil {
+		err := ap.offsetManager.Close()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("offsetManager closed")
+	}
+	if ap.consumer != nil {
+		err := ap.consumer.Close()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("consumer closed")
+	}
+	if ap.client != nil {
+		err := ap.client.Close()
+		if err != nil {
+			fmt.Println("client closed")
 		}
 	}
+	fmt.Println("end close")
 }
-func starPartitionManagerOfOffsetManagerErrorChanListen(wg *sync.WaitGroup, partitionManagerOfOffsetManager sarama.PartitionOffsetManager) {
-	if partitionManagerOfOffsetManager == nil {
-		return
+
+func (ap *offSetConsumer) RecvDataWithCancelCtxWithAllPartitions(ctx context.Context) {
+	ap.offsetManager.Commit()
+	if ap.consumer == nil {
+		panic(constant.ErrKafakaConsusmerNotInitialized)
 	} else {
-		wg.Add(1)
 		go func() {
-			defer wg.Done()
-			for msg := range partitionManagerOfOffsetManager.Errors() {
-				fmt.Printf("partitionManagerOfOffsetManager  Fail: %+v\n", msg)
-			}
+			<-ctx.Done()
+			ap.closeAll()
 		}()
-	}
-}
-func partitionManagerOfOffsetManagerClose(partitionManagerOfOffsetManager sarama.PartitionOffsetManager) {
-	if partitionManagerOfOffsetManager == nil {
-		return
-	} else {
-		fmt.Println("partitionManagerOfOffsetManager close")
-		partitionManagerOfOffsetManager.AsyncClose()
-	}
-}
-func getConsumerFromClient(client sarama.Client) sarama.Consumer {
-	if client == nil {
-		return nil
-	} else {
-		client, err := sarama.NewConsumerFromClient(client)
-		if err != nil {
-			fmt.Println("create consumer from client error:", err)
-			return nil
-		} else {
-			return client
+		partitionConsumeWaitGroup := &sync.WaitGroup{}
+		for eachPartionNumber, parititionOffsetManager := range ap.partitionManagerMap {
+			partitionConsumeWaitGroup.Add(1)
+			go func(ctx context.Context, wg *sync.WaitGroup, parititionNumber int32, parititionOffsetManager sarama.PartitionOffsetManager) {
+				defer wg.Done()
+				partitionConsumer := ap.partitionConsumerMap[parititionNumber]
+				messsageChan := partitionConsumer.Messages()
+				fmt.Printf("begin to consume topic %s,partition:%d\n", constant.TOPIC, parititionNumber)
+				for eachMessage := range messsageChan {
+					parititionOffsetManager.MarkOffset(eachMessage.Offset+1, "modified metadata")
+					// ap.offsetManager.Commit()
+					fmt.Printf("data receiving successfully,message:[%#v],topic:[%s],key:[%v],partition:[%v],offset:[%v]\n", string(eachMessage.Value), eachMessage.Topic, string(eachMessage.Key), eachMessage.Partition, eachMessage.Offset)
+				}
+			}(ctx, partitionConsumeWaitGroup, eachPartionNumber, parititionOffsetManager)
 		}
+		partitionConsumeWaitGroup.Wait()
 	}
-}
-
-func partitionConsumeWithOffset(ctx context.Context, wg *sync.WaitGroup, partitionConsumer sarama.PartitionConsumer, partitionManagerOfOffsetManager sarama.PartitionOffsetManager) error {
-	if partitionConsumer == nil || partitionManagerOfOffsetManager == nil {
-		return errors.New("partitionConsumer or partitionManagerOfOffsetManager is nil")
-	}
-	wg.Add(1)
-	defer wg.Done()
-	defer partitionManagerOfOffsetManagerClose(partitionManagerOfOffsetManager)
-	defer partitionConsumerClose(partitionConsumer)
-	partitionConsumeChan := partitionConsumer.Messages()
-FORLOOP:
-	for {
-		select {
-		case <-ctx.Done():
-			fmt.Println("timeout")
-			break FORLOOP
-		case msg := <-partitionConsumeChan:
-			fmt.Printf("Recv Message: [Key:%+v\n Value:%+v,Topic:%s,Partition:%d,Offset:%d]\n", string(msg.Key), string(msg.Value), msg.Topic, msg.Partition, msg.Offset)
-			// 每次消费后都更新一次 offset,这里更新的只是程序内存中的值，需要 commit 之后才能提交到 kafka
-			partitionManagerOfOffsetManager.MarkOffset(msg.Offset+1, "has been consumed")
-		}
-	}
-	return nil
-}
-func ConsumeWithOffsetManager(ctx context.Context, groupID string, topic string) error {
-	client := initClient()
-	defer clientClose(client)
-	// 根据 groupID 来区分不同的 consumer
-	//!!!注意: 每次提交的 offset 信息也是和 groupID 关联的
-	offsetManager := getConumserGroupOffsetManager(client, groupID)
-	defer offsetManagerClose(offsetManager)
-	// 每个分区的 offset 也是分别管理的
-	partitionManagerOfOffsetManager := getPartitionManagerOfOffsetManager(offsetManager, topic, constant.PARTITION_0)
-	consumer := getConsumerFromClient(client)
-	defer consumerClose(consumer)
-	partitions, err := client.Partitions(topic)
-	if err != nil {
-		return err
-	}
-	fmt.Println("the all partitions are: ", partitions)
-	partition := partitions[0]
-	fmt.Println("use partition is: ", partition)
-	allOffset, err := client.GetOffset(topic, partition, -1)
-	if err != nil {
-		return err
-	}
-	fmt.Println("all offsets is: ", allOffset)
-	nextOffsetToConsume, _ := partitionManagerOfOffsetManager.NextOffset()
-	fmt.Println("the nextOffsetToConsume is: ", nextOffsetToConsume)
-
-	var offsetBeginToConsume int64 = 0
-	if nextOffsetToConsume == -1 {
-		offsetBeginToConsume = 0
-	} else {
-		offsetBeginToConsume = nextOffsetToConsume
-	}
-	fmt.Printf("the remain message in partition %d are: %d\n ", partition, allOffset-offsetBeginToConsume)
-	partitionConsumer := getPartitionConsumer(consumer, topic, partition, offsetBeginToConsume)
-	wg := &sync.WaitGroup{}
-	startConsumerErrorChanListen(wg, partitionConsumer)
-	starPartitionManagerOfOffsetManagerErrorChanListen(wg, partitionManagerOfOffsetManager)
-	partitionConsumeWithOffset(ctx, wg, partitionConsumer, partitionManagerOfOffsetManager)
-	wg.Wait()
-	return nil
 }

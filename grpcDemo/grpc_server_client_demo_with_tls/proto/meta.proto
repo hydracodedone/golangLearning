@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package meta;
+option go_package = "grpc_server_client_demo_with_tls/types;types";
+
+message Request{
+    int32 id =1;
+}
+
+message  Response{
+    int32 id=1;
+}
+
+service RPCDemo{
+    rpc DemoRequest(Request) returns(Response);
+}

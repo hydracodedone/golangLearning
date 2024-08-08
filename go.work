@@ -1,24 +1,29 @@
 go 1.19
 
 use (
-	./antsDemo
-	./concDemo
-	./beegoWeb/BeegoApi
-	./goEs
+	./grpcDemo/grpc_gateway
+	./grpcDemo/grpc_name_resolver
+	./grpcDemo/grpc_server_client_demo
+	./grpcDemo/grpc_server_client_demo_with_stream
+	./grpcDemo/grpc_server_client_demo_with_tls
+	./grpcDemo/grpc_with_credentials
+	./grpcDemo/grpc_with_ctx
+	./grpcDemo/grpc_with_interceptor
+	./grpcDemo/grpc_with_retry
+	./grpcDemo/grpc_with_metadata
+	./grpcDemo/jwt_demo
+	./grpcDemo/protobuf_demo
+	./grpcDemo/raw_rpc_demo
+	./beegoAPIDemo
 	./goKafka
 	./goOrm
-	./goMongo
 	./goMq
 	./goRedis
-	./ginWeb
+	./ginWebDemo
 	./goEtcd
-	./函数init
-	./切片
-	./包管理
-	./结构体/工厂函数
-	./结构体/方法/继承字段方法的可见性
-	./工厂模式自动注册
-	./分布式锁
-	./性能分析
-	./测试
+	./微服务/链路追踪/单节点
+	./微服务/链路追踪/distribute_tracing_grpc
+	./微服务/链路追踪/distribute_tracing_gin
+	./error/error_demo
+	./gOrmGen
 )

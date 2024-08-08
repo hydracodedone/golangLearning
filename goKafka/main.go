@@ -4,46 +4,83 @@ import (
 	"context"
 	"fmt"
 	"go-kafka/asyncProducer"
-	"go-kafka/constant"
 	"go-kafka/consumer"
+	"go-kafka/syncProducer"
 
 	"time"
 )
 
 func AsyncProduce() {
-	ctx, cacelFunc := context.WithTimeout(context.Background(), time.Second*5)
-	defer cacelFunc()
-	topic := constant.TOPIC
-	key := constant.KEY
-	values := make([]string, 0, 50)
+	ap := asyncProducer.GetAsyncProducer()
+	defer ap.CloseAsyncProducer()
 	for i := 0; i < 10; i++ {
-		values = append(values, fmt.Sprintf("message-%d", i))
-	}
-	err := asyncProducer.AsyncProduce(ctx, values, topic, key)
-	if err != nil {
-		panic(err)
+		msg := fmt.Sprintf("Hello World %d", i)
+		ap.SendData(msg)
 	}
 }
-func Consume() {
-	ctx, cacelFunc := context.WithTimeout(context.Background(), time.Second*5)
-	defer cacelFunc()
-	topic := constant.TOPIC
-	err := consumer.ConsumeWithAllTopicPartitions(ctx, topic)
-	if err != nil {
-		panic(err)
+func SyncProduce() {
+	sp := syncProducer.GetSyncProducer()
+	defer sp.ClosesyncProducer()
+	for i := 0; i < 10; i++ {
+		msg := fmt.Sprintf("Hello World %d", i)
+		err := sp.SendData(msg)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
-func ConsumeWithOffSet() {
-	ctx, cacelFunc := context.WithTimeout(context.Background(), time.Second*3)
-	defer cacelFunc()
-	topic := constant.TOPIC
-	group_id := constant.CONSUMER_GROUP
-	err := consumer.ConsumeWithOffsetManager(ctx, group_id, topic)
-	if err != nil {
-		panic(err)
-	}
+
+func StandaloneConsume() {
+	sc := consumer.GetConsumer()
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	go func() {
+		timer := time.NewTimer(10 * time.Second)
+		<-timer.C
+		cancelFunc()
+	}()
+	sc.RecvDataWithCancelCtx(ctx)
+}
+func ConsumeAllPartitions() {
+	sc := consumer.GetConsumer()
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	go func() {
+		timer := time.NewTimer(10 * time.Second)
+		<-timer.C
+		cancelFunc()
+	}()
+	sc.RecvDataWithCancelCtxWithAllPartitions(ctx)
+}
+func ConsumeAllPartitionsWithOffset() {
+	sc := consumer.GetOffsetConsumer()
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	go func() {
+		timer := time.NewTimer(4 * time.Second)
+		<-timer.C
+		cancelFunc()
+	}()
+	sc.RecvDataWithCancelCtxWithAllPartitions(ctx)
+}
+func ConsumeWithConsumeGroup(name string) {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	go func() {
+		timer := time.NewTimer(20 * time.Second)
+		<-timer.C
+		cancelFunc()
+	}()
+	kc := consumer.GetkafkaConsumeInstance()
+	kc.ConsumeByConsumerGroup(ctx, name)
+}
+
+func Rebalance() {
+	go ConsumeWithConsumeGroup("consumer1")
+	time.Sleep(6 * time.Second)
+	ConsumeWithConsumeGroup("consumer2")
+	time.Sleep(15 * time.Second)
 }
 func main() {
-	// AsyncProduce()
-	ConsumeWithOffSet()
+	AsyncProduce()
+	// ConsumeWithConsumeGroup("consumer1")
+	// ConsumeAllPartitionsWithOffset()
+	// Rebalance()
+	// ConsumeAllPartitions()
 }

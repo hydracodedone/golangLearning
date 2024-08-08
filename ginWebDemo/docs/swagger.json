@@ -1,0 +1,25 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/SwaggerDemo/Demo1": {
+            "get": {
+                "description": "SwaggerDemo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Swagger"
+                ],
+                "summary": "SwaggerDemo",
+                "operationId": "/SwaggerDemo/Demo1",
+                "responses": {}
+            }
+        }
+    }
+}

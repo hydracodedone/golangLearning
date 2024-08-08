@@ -1,0 +1,12 @@
+syntax ="proto3";
+
+package user;
+
+option go_package="protobuf_demo/user/user_types;user_types";
+
+import "protobuf_demo/data/proto/data.proto";
+import "protobuf_demo/data/proto/data2.proto";
+
+service DescribeUser{
+    rpc describeUser(data.request) returns(data.response);
+}

@@ -196,8 +196,10 @@ func growslice(et *_type, old slice, cap int) slice {
 
 ## 删除
 ## 拷贝
+### 浅拷贝
 浅拷贝，我们只需要对切片的字面量进行赋值传递即可，这样相当于创建出了一个新的 slice header 实例，但是其中的指针 array、容量 cap 和长度 len 仍和老的 slice header 实例相同
 切片的截取操作也属于是浅拷贝
+### 深拷贝
 深拷贝指的是会创建出一个和 slice 容量大小相等的独立的内存区域，并将原 slice 中的元素一一拷贝到新空间中,可以调用系统方法 copy
 ## 数组的切片
 数组切片的len是截取的长度
@@ -292,7 +294,7 @@ len: 513, cap: 848
 
 其次，在真正申请内存空间时，我们会根据切片元素大小乘以容量计算出所需的总空间大小，得出所需的空间为 8byte * 832 = 6656 byte
 
-再进一步，结合分配内存的 mallocgc 流程，为了更好地进行内存空间对其，golang 允许产生一些有限的内部碎片，对拟申请空间的 object 进行大小补齐，最终 6656 byte 会被补齐到 6784 byte 的这一档次. （内存分配时，对象分档以及与 mspan 映射细节可以参考 golang 标准库 runtime/sizeclasses.go 文件，也可以阅读我的文章了解更多细节——golang 内存模型与分配机制）
+再进一步，结合分配内存的 mallocgc 流程，为了更好地进行内存空间对其，golang 允许产生一些有限的内部碎片，对拟申请空间的 object 进行大小补齐，最终 6656 byte 会被补齐到 6784 byte 的这一档次. （内存分配时，对象分档以及与 mspan 映射细节可以参考 golang 标准库 runtime/sizeclasses.go 文件）
 
 // class  bytes/obj  bytes/span  objects  tail waste  max waste  min align
 //     1          8        8192     1024           0     87.50%          8
@@ -313,18 +315,3 @@ func review17() {
 ```
 b的容量确定:
 根据append的第一个元素a[0:3],可以知道，a[0：3]的len为3 cap为10，那么如果追加的元素小于10-3个，则会修改底层数组
-```BASH
-```
-```GO
-func review18() {
-	var a []int = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	for range a { //此处的a是拷贝
-		//访问的是外部的a变量
-		a = append(a, 1)
-	}
-	fmt.Println(a)
-}
-```
-```BASH
-[1 2 3 4 5 6 7 8 9 10 1 1 1 1 1 1 1 1 1 1]
-```

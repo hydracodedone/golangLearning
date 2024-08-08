@@ -123,13 +123,14 @@ func demo9() {
 	}
 	fmt.Printf("%p\n", &p)
 	var a map[string]people = make(map[string]people)
-	//赋值的时候发生了浅拷贝
+	//赋值的时候发生了浅拷贝，无法对map中的value结构体修改，建议将结构体的指针作为value保存
 	a["first"] = p
 	b := a
 	fmt.Println(b)
 	//cannot assign to struct field in map
 	// a["first"].Name = "123"
-
+	//cannot take address of a["first"] (map index expression of type people)
+	// fmt.Println(&a["first"])
 	//取出的也不是原来的struct
 	p1 := a["first"]
 	fmt.Printf("%p\n", &p1)

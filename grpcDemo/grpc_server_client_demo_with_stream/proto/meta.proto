@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package meta;
+option go_package = "grpc_server_client_demo_with_stream/types;types";
+
+message Request{
+    string requestMessage =1;
+}
+
+message  Response{
+    string responseMessage=1;
+}
+
+service RPCDemo{
+    rpc Unary(Request) returns (Response) {}
+    rpc ResponseStreaming(Request) returns (stream Response) {}
+    rpc ResquestStreaming(stream Request) returns (Response) {}
+    rpc ResquestStreamingAndResponseStreaming(stream Request) returns (stream Response) {}
+}

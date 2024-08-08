@@ -2,113 +2,108 @@ package consumer
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"go-kafka/constant"
 	"sync"
-	"time"
 
 	"github.com/IBM/sarama"
 )
 
-var CONSUMER sarama.Consumer
-
-func initConsumer() sarama.Consumer {
-	if CONSUMER == nil {
-		config := sarama.NewConfig()
-		config.Consumer.Offsets.AutoCommit.Enable = true              // 开启自动 commit offset
-		config.Consumer.Offsets.AutoCommit.Interval = 1 * time.Second // 自动 commit时间间隔
-
-		CONSUMER, err := sarama.NewConsumer([]string{constant.KAFKA_ADDRESS}, config)
-		if err != nil {
-			fmt.Printf("Error creating consumer err: %s\n", err.Error())
-			return nil
-		}
-		return CONSUMER
-	}
-	return CONSUMER
+type consumer struct {
+	config   *sarama.Config
+	consumer sarama.Consumer
 }
-func consumerClose(consumer sarama.Consumer) {
-	if consumer == nil {
-		return
+
+func GetConsumer() *consumer {
+	ap := &consumer{}
+	ap.initConsumerConfig()
+	ap.initConsumer()
+	return ap
+}
+
+func (ap *consumer) initConsumerConfig() {
+	config := sarama.NewConfig()
+	ap.config = config
+}
+
+func (ap *consumer) initConsumer() {
+	consumer, err := sarama.NewConsumer([]string{constant.KAFKA_ADDRESS}, ap.config)
+	if err != nil {
+		panic(err)
 	} else {
-		fmt.Println("consumer close")
-		err := consumer.Close()
+		ap.consumer = consumer
+	}
+}
+
+func (ap *consumer) closeConsumer() {
+	if ap.consumer != nil {
+		err := ap.consumer.Close()
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println("syncConsumer closed")
 	}
 }
 
-func getPartitionConsumer(consumer sarama.Consumer, topic string, partition int32, offset int64) sarama.PartitionConsumer {
-	if consumer == nil {
-		return nil
-	}
-	partitionConsumer, err := consumer.ConsumePartition(topic, partition, offset)
-	if err != nil {
-		fmt.Printf("Error creating partition consumer err: %s\n", err.Error())
-		return nil
-	}
-	return partitionConsumer
-}
-func partitionConsumerClose(partitionConsumer sarama.PartitionConsumer) {
-	if partitionConsumer == nil {
-		return
+func (ap *consumer) RecvDataWithCancelCtx(ctx context.Context) {
+	if ap.consumer == nil {
+		panic(constant.ErrKafakaConsusmerNotInitialized)
 	} else {
-		fmt.Println("partitionConsumer async close")
-		partitionConsumer.AsyncClose()
-	}
-}
-func startConsumerErrorChanListen(wg *sync.WaitGroup, partitionConsumer sarama.PartitionConsumer) {
-	if partitionConsumer == nil {
-		return
-	} else {
-		wg.Add(1)
+		defer ap.closeConsumer()
+		partitionConsumer, err := ap.consumer.ConsumePartition(constant.TOPIC, 0, sarama.OffsetOldest)
+		if err != nil {
+			panic(err)
+		}
+		messsageChan := partitionConsumer.Messages()
 		go func() {
-			defer wg.Done()
-			for msg := range partitionConsumer.Errors() {
-				fmt.Printf("Recv Message Fail: %+v\n", msg)
+			<-ctx.Done()
+			err := partitionConsumer.Close()
+			if err != nil {
+				panic(err)
 			}
+			fmt.Println("partitionConsumer closed")
 		}()
-	}
-}
-func partitionConsumerConsume(ctx context.Context, wg *sync.WaitGroup, partitionConsumer sarama.PartitionConsumer) {
-	wg.Add(1)
-	defer wg.Done()
-	defer partitionConsumerClose(partitionConsumer)
-	consumeChan := partitionConsumer.Messages()
-FORLOOP:
-	for {
-		select {
-		case <-ctx.Done():
-			break FORLOOP
-		case msg := <-consumeChan:
-			fmt.Printf("Recv Message: [Key:%+v\n Value:%+v,Topic:%s,Partition:%d,Offset:%d]\n", string(msg.Key), string(msg.Value), msg.Topic, msg.Partition, msg.Offset)
+		fmt.Println("begin")
+		for eachMessage := range messsageChan {
+			fmt.Printf("data receiving successfully,message:[%#v],topic:[%s],key:[%v],partition:[%v],offset:[%v]\n", string(eachMessage.Value), eachMessage.Topic, string(eachMessage.Key), 0, eachMessage.Offset)
 		}
 	}
 }
 
-func ConsumeWithAllTopicPartitions(ctx context.Context, topic string) error {
-	consumer := initConsumer()
-	if consumer == nil {
-		err := errors.New("nil consumer")
-		return err
-	}
-	defer consumerClose(consumer)
-	partitions, err := consumer.Partitions(topic)
-	if err != nil {
-		return err
-	}
-	wg := &sync.WaitGroup{}
-	for _, each_partion := range partitions {
-		partitionConsumer := getPartitionConsumer(consumer, topic, each_partion, sarama.OffsetOldest)
-		if partitionConsumer == nil {
-			err := errors.New("nil partition consumer")
-			return err
+func (ap *consumer) RecvDataWithCancelCtxWithAllPartitions(ctx context.Context) {
+	if ap.consumer == nil {
+		panic(constant.ErrKafakaConsusmerNotInitialized)
+	} else {
+		defer ap.closeConsumer()
+		partitions, err := ap.consumer.Partitions(constant.TOPIC)
+		if err != nil {
+			panic(err)
 		}
-		startConsumerErrorChanListen(wg, partitionConsumer)
-		partitionConsumerConsume(ctx, wg, partitionConsumer)
-		wg.Wait()
+		partitionConsumeWaitGroup := &sync.WaitGroup{}
+		for eachPartionNumber := range partitions {
+			partitionConsumeWaitGroup.Add(1)
+			go func(ctx context.Context, wg *sync.WaitGroup, parititionNumber int) {
+				defer wg.Done()
+				partitionConsumer, err := ap.consumer.ConsumePartition(constant.TOPIC, int32(parititionNumber), sarama.OffsetOldest)
+				if err != nil {
+					panic(err)
+				}
+				messsageChan := partitionConsumer.Messages()
+				go func() {
+					<-ctx.Done()
+					err := partitionConsumer.Close()
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("partitionConsumer closed,partition:[%d]\n", parititionNumber)
+				}()
+				fmt.Printf("begin to consume topic %s,partition:%d\n", constant.TOPIC, parititionNumber)
+				for eachMessage := range messsageChan {
+					fmt.Printf("data receiving successfully,message:[%#v],topic:[%s],key:[%v],partition:[%v],offset:[%v]\n", string(eachMessage.Value), eachMessage.Topic, string(eachMessage.Key), eachMessage.Partition, eachMessage.Offset)
+					
+				}
+			}(ctx, partitionConsumeWaitGroup, eachPartionNumber)
+		}
+		partitionConsumeWaitGroup.Wait()
 	}
-	return nil
 }
